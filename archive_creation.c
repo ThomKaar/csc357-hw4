@@ -35,26 +35,9 @@ void traverse_to_root(struct stat* sb, struct stat *sb_list, char *path)
    return;
 }
 
-void create_path(char *path, struct stat *sb_list, int i)
-{
-   int temp;
-   DIR *dirp;
-   struct dirent *direntp;
-   struct stat sb;
-   int n;
-    
-   temp = i;
-   while(temp > 0)
-   {
-      dirp = opendir(path);
-      
-      while((direntp = readdir(dirp)) != NULL)
-      {
-         stat(direntp->d_name, &sb);
-         lstat(path, &sb);
-         printf("dirent i_node is: %ld\t stat i_node is: %ld\n", direntp->d_ino, sb.st_ino);
-         if(sb.st_ino == sb_list[temp-1].st_ino && sb.st_dev == sb_list[temp-1].st_dev)
-         {
-            add_to_path(path, direntp->d_name);
-            n = strlen(path);
-            path[n] = '/';
+void header_set_name(Header* header, char* name){
+      strcpy(header->name, name);
+}
+
+/*given: parse the current path */
+
