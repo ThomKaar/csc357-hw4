@@ -4,7 +4,24 @@
 
 /*This file's purpose is to store helper functions to
  archive files for mytar. */
+ void *safe_malloc(size_t size){
+    void *new = malloc(size);
+    if(new == NULL)
+    {
+       perror("safemalloc()");
+       exit(EXIT_FAILURE);
+    }
+    return new;
+ }
 
+ struct stat *safe_stat(const char *path, struct stat *buf){
+    if (lstat(path, buf))
+    {
+       perror("mypwd");
+       exit(EXIT_FAILURE);
+    }
+    return buf;
+ }
 /*This function's purpose is to traverse through all
 children paths given a parent.*/
 void traverse_paths(char * pathname){
