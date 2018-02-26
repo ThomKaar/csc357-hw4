@@ -4,29 +4,6 @@
 
 /*This file's purpose is to store helper functions to
  archive files for mytar. */
- void *safe_malloc(size_t size){
-    void *new = malloc(size);
-    if(new == NULL)
-    {
-       perror("safemalloc()");
-       exit(EXIT_FAILURE);
-    }
-    return new;
- }
-
- struct stat *safe_stat(const char *path, struct stat *buf){
-    if (lstat(path, buf))
-    {
-       perror("mypwd");
-       exit(EXIT_FAILURE);
-    }
-    return buf;
- }
-/*This function's purpose is to traverse through all
-children paths given a parent.*/
-void traverse_paths(char * pathname){
-
-}
 
 void traverse_to_root(struct stat* sb, struct stat *sb_list, char *path)
 {
@@ -78,11 +55,11 @@ static void prefix_name_split(char*path, char*d_name, char*name, char* prefix){
 
 /*Add a string representation of mode_t as the mode member of header
 bitwise or the st_mode with the mode #defines */
-/*TODO: Ask Greg about how to convert octal to a string. */
 static void header_set_mode(Header *header, mode_t st_mode){
     char mode[8];
     int i;
 
+    clear_char_array(mode, 8);
     i = 0;
     while(i < 7){
       mode[7-i] = (char) ((st_mode % 8) + ASCII_NUM_OFFSET);
@@ -93,10 +70,13 @@ static void header_set_mode(Header *header, mode_t st_mode){
     strcpy(header->mode, mode);
 }
 
+
 /*Given a uid in octal create a string representing the octal values*/
 static void header_set_uid(Header *header, uid_t uid){
   char u[8];
   int i;
+
+  clear_char_array(u,8);
 
   i = 0;
   while(i < 7){
@@ -112,6 +92,8 @@ static void header_set_gid(Header *header, gid_t gid){
   char g[8];
   int i;
 
+  clear_char_array(g, 8);
+
   i = 0;
   while(i < 7){
     g[7-i] = (char) ((g % 8) + ASCII_NUM_OFFSET);
@@ -124,24 +106,68 @@ static void header_set_gid(Header *header, gid_t gid){
 
 /**/
 static void header_set_size(Header *header, off_t size, int valid_file){
-  char header_size[8];
+  char header_size[12];
   int i;
-  for(i=0;i<7;i++){
+  for(i=0;i<12;i++){
     header_size[i] = '0';
   }
-  header_size[8] = '\0';
+  header_size[11] = '\0';
   i = 0;
   if(!valid_file){
     strcpy(header->size, header_size);
   }
   else{
-    while(i < 7){
-      header_size[7-i] = (char) ((size % 8) + ASCII_NUM_OFFSET);
+    while(i < 11){
+      header_size[11-i] = (char) ((size % 8) + ASCII_NUM_OFFSET);
       size /= 8;
       i++;
     }
-    header_size[8] = '\0';
+    header_size[12] = '\0';
     strcpy(header->gid, size);
+  }
+}
+
+static void header_set_mtime(Header *header, time_t timespec){
+  char time[12];
+  clear_char_array(time, 12);
+  while(i < 11){
+    time[11-i] = (char) ((timespec->st_mtime % 8) + ASCII_NUM_OFFSET);
+    timespec /= 8;
+    i++;
+  }
+  time[11] = '\0';
+  strcpy(header->st_mtime,time);
+  return ;
+}
+
+static void clear_char_array(char *array, int size){
+  int i;
+  for(i=0; i< size; i++){
+    array[i] = '\0';
+  }
+}
+
+/*TODO: Still might need to implement the regular file (alternate)*/
+static void header_set_typeflag(Header *header, mode_t mode){
+  if(S_ISREG(mode)){
+    header->typeflag = '0';
+  }
+  else if(S_ISLINK(mode)){
+    header->typeflag = '2';
+  }
+  else if(S_ISDIR(mode)){
+    header->typeflag = '5';
+  }
+}
+
+static void header_set_linkname(Header * header, mode_t mode, char* linkname){
+  char * namebuffer[100];
+  clear_char_array(namebuffer, 100);
+  if(S_ISLINK(mode)){
+    strcpy(header->linkname, linkname);
+  }
+  else{
+    strcpy(header->linkname, namebuffer);
   }
 }
 

@@ -3,7 +3,7 @@
 #include "flags_helper.h"
 
 int main(int argc, char* argv[]){
- 
+
    int sovon;
 
    if(!flags_has_f(argv)){
