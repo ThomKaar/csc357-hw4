@@ -10,11 +10,11 @@ typedef struct {
    char  mode[8];
    char uid[8];
    char gid[8];
-   char size[8];
-   struct timespec mtime;
+   char size[12];
+   struct mtime[10];
    unsigned long chksum;
    char typeflag;
-   char *linkname;
+   char linkname[100];
    const char *magic;
    const char *version;
    char     *uname;
