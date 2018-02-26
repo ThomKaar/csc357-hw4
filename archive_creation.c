@@ -93,7 +93,6 @@ static void header_set_mode(Header *header, mode_t st_mode){
     strcpy(header->mode, mode);
 }
 
-
 /*Given a uid in octal create a string representing the octal values*/
 static void header_set_uid(Header *header, uid_t uid){
   char u[8];
