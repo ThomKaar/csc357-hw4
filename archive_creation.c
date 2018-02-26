@@ -188,10 +188,22 @@ Header * create_header(char * path){
   char prefix[155];
   struct stat *sb;
   Header * header;
+  int cksum;
 
+  cksum = 0;
+  lstat(path, sb);
   header->devminor = "\0";
+  cksum += 1;
   header->devmajor = "\0";
+  cksum += 1;
   header->magic = "ustar";
+  cksum += 5;
   header->version = "00";
+  cksum += 2;
+  header_set_mode(header, sb->st_mode);
+  cksum += 8;
+  /**prefix_name_split(path);
+  header_set_name(header, );*/
+
   return header;
 }
