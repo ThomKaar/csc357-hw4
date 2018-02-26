@@ -171,17 +171,6 @@ static void header_set_linkname(Header * header, mode_t mode, char* linkname){
   }
 }
 
-static void header_set_mtime(Header *header, time_t timespec){
-  char time[8];
-  while(i < 7){
-    time[7-i] = (char) ((timespec->st_mtime % 8) + ASCII_NUM_OFFSET);
-    timespec /= 8;
-    i++;
-  }
-  time[8] = '\0';
-  strcpy(header->st_mtime,time);
-}
-
 static void header_set_uname(Header* header, uid_t uid){
   struct passwd *pw;
   pw = getpwuid(uid);
