@@ -157,12 +157,27 @@ static void header_set_mtime(Header *header, time_t timespec){
   strcpy(header->st_mtime,time);
 }
 
+static void header_set_uname(Header* header, uid_t uid){
+  struct passwd *pw;
+  pw = getpwuid(uid);
+  strcpy(header->uname, pw->pw_name);
+}
 
+static void header_set_gname(Header* header, gid_t gid){
+  struct group *gr;
+  gr = getgrgid(gid);
+  strcpy(header->gname, gr->gr_name);
+}
 
 Header * create_header(char * path){
   char name[100];
   char prefix[155];
   struct stat *sb;
   Header * header;
+
+  header->devminor = "\0";
+  header->devmajor = "\0";
+  header->magic = "ustar";
+  header->version = "00";
   return header;
 }

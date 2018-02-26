@@ -7,7 +7,7 @@
 
 typedef struct {
    char name[100];
-   char  mode[8];
+   char mode[8];
    char uid[8];
    char gid[8];
    char size[8];
