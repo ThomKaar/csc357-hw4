@@ -146,5 +146,6 @@ Header * create_header(char * path){
   char name[100];
   char prefix[155];
   struct stat *sb;
-
+  Header * header;
+  return header;
 }
