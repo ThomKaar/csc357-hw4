@@ -14,7 +14,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <pwd.h>
-
+#include <grp.h>
+#include <uuid/uuid.h>
 
 typedef struct {
    char name[100];
@@ -26,8 +27,8 @@ typedef struct {
    unsigned long chksum;
    char typeflag;
    char linkname[100];
-   const char magic[6];
-   const char version[3];
+   char magic[6];
+   char version[3];
    char     uname[32];
    char     gname[32];
    char  devmajor[8];

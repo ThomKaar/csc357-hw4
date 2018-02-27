@@ -13,12 +13,15 @@ static void clear_char_array(char *array, int size){
 }
 
 static void header_set_name(Header* header, char* name){
-      strcpy(header->name, name);
+  strcpy(header->name, name);
+}
+
+static void header_set_prefix(Header* header, char* prefix_name){
+  strcpy(header->prefix, prefix_name);
 }
 
 /*given: the path (aquired by getpwd()), a char array of 100, and a char array size 155*/
 static void prefix_name_split(char*path, char*d_name, char*name, char* prefix){
-  int i;
   int offset;
 
   if(strlen(d_name) > 100){
@@ -29,7 +32,7 @@ static void prefix_name_split(char*path, char*d_name, char*name, char* prefix){
     strncat(prefix, d_name, offset);
   }
   else{
-    strcpyn(name, d_name, strlen(d_name));
+    strncpy(name, d_name, strlen(d_name));
     strcpy(prefix, path);
   }
 }
@@ -47,7 +50,7 @@ static void header_set_mode(Header *header, mode_t st_mode){
       st_mode /= 8;
       i++;
     }
-    mode[8] = '\0';
+    mode[7] = '\0';
     strcpy(header->mode, mode);
 }
 
@@ -65,7 +68,7 @@ static void header_set_uid(Header *header, uid_t uid){
     uid /= 8;
     i++;
   }
-  u[8] = '\0';
+  u[7] = '\0';
   strcpy(header->uid, u);
 }
 
@@ -81,12 +84,12 @@ static void header_set_gid(Header *header, gid_t gid){
     gid /= 8;
     i++;
   }
-  g[8] = '\0';
+  g[7] = '\0'; /* Changed from 8 to 7 to be within range */
   strcpy(header->gid, g);
 }
 
 /**/
-static void header_set_size(Header *header, off_t size, int valid_file){
+static void header_set_size(Header *header, off_t size, mode_t mode){
   char header_size[12];
   int i;
   for(i=0;i<12;i++){
@@ -94,7 +97,7 @@ static void header_set_size(Header *header, off_t size, int valid_file){
   }
   header_size[11] = '\0';
   i = 0;
-  if(!valid_file){
+  if(!S_ISREG(mode)){
     strcpy(header->size, header_size);
   }
   else{
@@ -103,25 +106,26 @@ static void header_set_size(Header *header, off_t size, int valid_file){
       size /= 8;
       i++;
     }
-    header_size[12] = '\0';
+    header_size[11] = '\0';
     strcpy(header->gid, header_size);
   }
 }
 
 static void header_set_mtime(Header *header, time_t timespec){
-  char time[12];
+  char tim[12]; /*I'm pretty sure <time> is a keyword in C, changed to tim */
   int i;
-  clear_char_array(time, 12);
-  i =0;
+  clear_char_array(tim, 12);
+  i = 0;
   while(i < 11){
-    time[11-i] = (char) ((timespec % 8) + ASCII_NUM_OFFSET);
+    tim[11-i] = (char) ((timespec % 8) + ASCII_NUM_OFFSET);
     timespec /= 8;
     i++;
   }
-  time[11] = '\0';
-  strcpy(header->mtime,time);
+  tim[11] = '\0'; /* Changed index from 12 to 11, to be in correct range */
+  strcpy(header->mtime, tim);
   return ;
 }
+
 /*TODO: Still might need to implement the regular file (alternate)*/
 static void header_set_typeflag(Header *header, mode_t mode){
   if(S_ISREG(mode)){
@@ -148,9 +152,11 @@ static void header_set_linkname(Header * header, mode_t mode, char* linkname){
 
 static void header_compute_chksum(Header *header, char* field){
    int i;
+   i = 0; /* initialized i here --A */
    while(field[i] != '\0')
    {
       header->chksum += field[i];
+      i++;
    }
    return;
 }
@@ -164,7 +170,7 @@ static void header_set_uname(Header* header, uid_t uid){
 static void header_set_gname(Header* header, gid_t gid){
   struct group *gr;
   gr = getgrgid(gid);
-  strcpy(header->gname, gr->gr_name);  
+  strcpy(header->gname, gr->gr_name);
 }
 
 static void header_set_chksum(Header *header)
@@ -192,35 +198,39 @@ Header * create_header(char * path, struct dirent* direntp){
   char prefix[155];
   struct stat *sb;
   Header * header;
-  int cksum;
   header->chksum = 0;
-  
-   
+
+
   lstat(path, sb);
-  
+
   /*Check this, but devminor and major are length 8
    * so I will make them char arrays of size 8*/
   clear_char_array(header->devminor, 8);
   clear_char_array(header->devmajor, 8);
-  
+
   /*header->devminor = "\0";
   header->devmajor = "\0";*/
 
   strcpy(header->magic,"ustar");
   strcpy(header->version, "00");
-  
-  prefix_name_split(path, direntp->d_name, name, prefix); 
+
+  prefix_name_split(path, direntp->d_name, name, prefix);
   header_set_name(header, name);
   header_set_prefix(header, prefix);
   header_set_mode(header, sb->st_mode);
   header_set_uid(header, sb->st_uid);
   header_set_gid(header, sb->st_gid);
-  header_set_size(header, sb->st_size, );
-  header_set_mtime(header, sb->timespec->st_mtime);
- 
+  header_set_size(header, sb->st_size, sb->st_mode);
+  header_set_mtime(header, sb->st_mtime);
+  header_set_chksum(header);
+  header_set_typeflag(header, sb->st_mode);
+  header_set_linkname(header, sb->st_mode, name); /*TODO is this the same name as above?*/
+  header_set_uname(header, sb->st_uid);
+  header_set_gname(header, sb->st_gid);
+
   /**prefix_name_split(path);
   header_set_name(header, );*/
-   
+
   return header;
 }
 
@@ -248,5 +258,3 @@ void traverse_to_root(struct stat* sb, struct stat* sb_list, char *path){
    create_path(path, sb_list, i-OFF_SET);
    return;
 }
-
-
