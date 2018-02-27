@@ -131,7 +131,7 @@ static void header_set_typeflag(Header *header, mode_t mode){
   if(S_ISREG(mode)){
     header->typeflag = '0';
   }
-  else if(S_ISLINK(mode)){
+  else if(S_ISLNK(mode)){
     header->typeflag = '2';
   }
   else if(S_ISDIR(mode)){
@@ -142,7 +142,7 @@ static void header_set_typeflag(Header *header, mode_t mode){
 static void header_set_linkname(Header * header, mode_t mode, char* linkname){
   char namebuffer[100];
   clear_char_array(namebuffer, 100);
-  if(S_ISLINK(mode)){
+  if(S_ISLNK(mode)){
     strcpy(header->linkname, linkname);
   }
   else{
@@ -197,19 +197,16 @@ Header * create_header(char * path, struct dirent* direntp){
   char name[100];
   char prefix[155];
   struct stat *sb;
-  Header * header;
+  Header *header = (Header*) malloc(sizeof(Header));
+  sb = (struct stat *) malloc(sizeof(struct stat));
+
   header->chksum = 0;
 
-
   lstat(path, sb);
-
-  /*Check this, but devminor and major are length 8
-   * so I will make them char arrays of size 8*/
+ 
   clear_char_array(header->devminor, 8);
   clear_char_array(header->devmajor, 8);
 
-  /*header->devminor = "\0";
-  header->devmajor = "\0";*/
 
   strcpy(header->magic,"ustar");
   strcpy(header->version, "00");
@@ -228,10 +225,14 @@ Header * create_header(char * path, struct dirent* direntp){
   header_set_uname(header, sb->st_uid);
   header_set_gname(header, sb->st_gid);
 
-  /**prefix_name_split(path);
-  header_set_name(header, );*/
-
+  
   return header;
+}
+
+
+
+void traverse_down_one(char * path){
+        
 }
 
 void traverse_to_root(struct stat* sb, struct stat* sb_list, char *path){
@@ -255,6 +256,28 @@ void traverse_to_root(struct stat* sb, struct stat* sb_list, char *path){
       first = 0;
       /*This is a waste of an assignment every time except the first time.*/
    }
-   create_path(path, sb_list, i-OFF_SET);
+   /*create_path(path, sb_list, i-OFF_SET);*/
    return;
 }
+
+void write_header(Header *header, int fd){
+   
+   write(fd,header->name, sizeof(uint8_t)*100);
+   write(fd, header->mode, sizeof(uint8_t)*8);
+   write(fd, header->uid, sizeof(uint8_t)*8);
+   write(fd, header->gid, sizeof(uint8_t)*8);
+   write(fd, header->size, sizeof(uint8_t)*12);
+   write(fd, header->mtime, sizeof(uint8_t)*10);
+   write(fd, &header->chksum, sizeof(uint8_t));
+   write(fd, &header->typeflag, sizeof(uint8_t));
+   write(fd, header->linkname, sizeof(uint8_t)*100);
+   write(fd, &header->magic, sizeof(uint8_t)*6);
+   write(fd, &header->version, sizeof(uint8_t)*3);
+   write(fd, header->uname, sizeof(uint8_t)*32);
+   write(fd, header->gname, sizeof(uint8_t)*32);
+   write(fd, &header->devmajor, sizeof(uint8_t)*8);
+   write(fd, &header->devminor, sizeof(uint8_t)*8);
+   write(fd, header->prefix, sizeof(uint8_t)*155);
+}
+
+

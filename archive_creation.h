@@ -3,6 +3,8 @@
 #ifndef ARCHIVE_CREATION_H
 #define ARCHIVE_CREATION_H
 
+#define _BSD_SOURCE
+
 #define ASCII_NUM_OFFSET 48
 #define OFF_SET 2
 #define USTAR_ASCII_SUM 559
@@ -16,6 +18,12 @@
 #include <pwd.h>
 #include <grp.h>
 #include <uuid/uuid.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
 
 typedef struct {
    char name[100];
@@ -38,6 +46,8 @@ typedef struct {
 } Header;
 
 
+void write_header(Header * header, int fd);
+Header *create_header(char * path, struct dirent* direntp);
 void traverse_paths(char* pathname);
 
 #endif

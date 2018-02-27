@@ -1,10 +1,14 @@
 /* Written for God by His grace. */
 
 #include "flags_helper.h"
+#include "archive_creation.h"
 
 int main(int argc, char* argv[]){
 
-   int sovon;
+   DIR *dirp;
+   struct dirent *direntp;
+   Header * header;
+   int outfd;
 
    if(!flags_has_f(argv)){
       perror("mytar");
@@ -15,18 +19,13 @@ int main(int argc, char* argv[]){
      perror("mytar");
      exit(EXIT_FAILURE);
    }
-
-   sovorn = v_s_ornone(argv);
-   if(sovorn < 0){
-      /*call none main*/
-   }
-   else if(sovon == 0){
-      /*call verbose main*/
-   }
-   else{
-      /*call strict main*/
-   }
-
+     
+   outfd = open("single_header.out", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+   dirp = opendir("./");
+   direntp = readdir(dirp);
+   header = create_header("./", direntp);
+   write_header(header, outfd); 
+   
    return 0;
 
 }
