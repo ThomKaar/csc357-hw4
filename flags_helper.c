@@ -3,10 +3,8 @@
 
 int flags_has_f(char* argv[])  {
    int flags_len;
-   int i;
-   int boolean;  
+   int i;  
    
-   boolean = 0;
    flags_len = strlen(argv[1]);
    
    for(i=0; i<flags_len; i++){

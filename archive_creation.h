@@ -50,4 +50,5 @@ void write_header(Header * header, int fd);
 Header *create_header(char * path, struct dirent* direntp);
 void traverse_paths(char* pathname);
 
+
 #endif

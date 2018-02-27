@@ -21,11 +21,10 @@ int main(int argc, char* argv[]){
    }
      
    outfd = open("single_header.out", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-   dirp = opendir("./");
+   dirp = opendir(argv[2]);
    direntp = readdir(dirp);
-   header = create_header("./", direntp);
-   write_header(header, outfd); 
-   
+   header = create_header(argv[2], direntp);
+   write_header(header, outfd);  
    return 0;
 
 }
