@@ -3,32 +3,13 @@
 #include "archive_creation.h"
 
 /*This file's purpose is to store helper functions to
- archive files for mytar. */
+ Archive files for mytar. */
 
-void traverse_to_root(struct stat* sb, struct stat *sb_list, char *path)
-{
-   int i
-   long prev_i;
-   int first;
-
-   first = 1;
-   prev_i= 0; /*default value should never be used.*/
-   i = 0;
-   sb_list[i] = *sb;
-   i++;
-   while((sb->st_ino != prev_i) || first)
-   {
-      chdir("../");
-      prev_i = sb->st_ino;
-      stat("./", sb);
-      sb_list[i] = *sb;
-      i++;
-
-      first = 0;
-      /*This is a waste of an assignment every time except the first time.*/
-   }
-   create_path(path, sb_list, i-OFF_SET);
-   return;
+static void clear_char_array(char *array, int size){
+  int i;
+  for(i=0; i< size; i++){
+    array[i] = '\0';
+  }
 }
 
 static void header_set_name(Header* header, char* name){
@@ -42,7 +23,7 @@ static void prefix_name_split(char*path, char*d_name, char*name, char* prefix){
 
   if(strlen(d_name) > 100){
     offset = strlen(d_name) - 100;
-    strcpy(name, (d_name + offset);
+    strcpy(name, (d_name + offset));
 
     strcpy(prefix, path);
     strncat(prefix, d_name, offset);
@@ -96,7 +77,7 @@ static void header_set_gid(Header *header, gid_t gid){
 
   i = 0;
   while(i < 7){
-    g[7-i] = (char) ((g % 8) + ASCII_NUM_OFFSET);
+    g[7-i] = (char) ((gid % 8) + ASCII_NUM_OFFSET);
     gid /= 8;
     i++;
   }
@@ -123,30 +104,24 @@ static void header_set_size(Header *header, off_t size, int valid_file){
       i++;
     }
     header_size[12] = '\0';
-    strcpy(header->gid, size);
+    strcpy(header->gid, header_size);
   }
 }
 
 static void header_set_mtime(Header *header, time_t timespec){
   char time[12];
+  int i;
   clear_char_array(time, 12);
+  i =0;
   while(i < 11){
-    time[11-i] = (char) ((timespec->st_mtime % 8) + ASCII_NUM_OFFSET);
+    time[11-i] = (char) ((timespec % 8) + ASCII_NUM_OFFSET);
     timespec /= 8;
     i++;
   }
   time[11] = '\0';
-  strcpy(header->st_mtime,time);
+  strcpy(header->mtime,time);
   return ;
 }
-
-static void clear_char_array(char *array, int size){
-  int i;
-  for(i=0; i< size; i++){
-    array[i] = '\0';
-  }
-}
-
 /*TODO: Still might need to implement the regular file (alternate)*/
 static void header_set_typeflag(Header *header, mode_t mode){
   if(S_ISREG(mode)){
@@ -161,7 +136,7 @@ static void header_set_typeflag(Header *header, mode_t mode){
 }
 
 static void header_set_linkname(Header * header, mode_t mode, char* linkname){
-  char * namebuffer[100];
+  char namebuffer[100];
   clear_char_array(namebuffer, 100);
   if(S_ISLINK(mode)){
     strcpy(header->linkname, linkname);
@@ -169,6 +144,15 @@ static void header_set_linkname(Header * header, mode_t mode, char* linkname){
   else{
     strcpy(header->linkname, namebuffer);
   }
+}
+
+static void header_compute_chksum(Header *header, char* field){
+   int i;
+   while(field[i] != '\0')
+   {
+      header->chksum += field[i];
+   }
+   return;
 }
 
 static void header_set_uname(Header* header, uid_t uid){
@@ -180,30 +164,89 @@ static void header_set_uname(Header* header, uid_t uid){
 static void header_set_gname(Header* header, gid_t gid){
   struct group *gr;
   gr = getgrgid(gid);
-  strcpy(header->gname, gr->gr_name);
+  strcpy(header->gname, gr->gr_name);  
 }
 
-Header * create_header(char * path){
+static void header_set_chksum(Header *header)
+{
+   header_compute_chksum(header, header->devminor);
+   header_compute_chksum(header, header->devmajor);
+   header->chksum += USTAR_ASCII_SUM;
+   header->chksum += VERSION_ASCII_SUM;
+   header_compute_chksum(header, header->gname);
+   header_compute_chksum(header, header->uname);
+   header_compute_chksum(header, header->linkname);
+   header->chksum += header->typeflag;
+   header_compute_chksum(header, header->mtime);
+   header_compute_chksum(header, header->size);
+   header_compute_chksum(header, header->name);
+   header_compute_chksum(header, header->mode);
+   header_compute_chksum(header, header->uid);
+   header_compute_chksum(header, header->gid);
+   header_compute_chksum(header, header->prefix);
+   return;
+}
+
+Header * create_header(char * path, struct dirent* direntp){
   char name[100];
   char prefix[155];
   struct stat *sb;
   Header * header;
   int cksum;
-
-  cksum = 0;
+  header->chksum = 0;
+  
+   
   lstat(path, sb);
-  header->devminor = "\0";
-  cksum += 1;
-  header->devmajor = "\0";
-  cksum += 1;
-  header->magic = "ustar";
-  cksum += 5;
-  header->version = "00";
-  cksum += 2;
+  
+  /*Check this, but devminor and major are length 8
+   * so I will make them char arrays of size 8*/
+  clear_char_array(header->devminor, 8);
+  clear_char_array(header->devmajor, 8);
+  
+  /*header->devminor = "\0";
+  header->devmajor = "\0";*/
+
+  strcpy(header->magic,"ustar");
+  strcpy(header->version, "00");
+  
+  prefix_name_split(path, direntp->d_name, name, prefix); 
+  header_set_name(header, name);
+  header_set_prefix(header, prefix);
   header_set_mode(header, sb->st_mode);
-  cksum += 8;
+  header_set_uid(header, sb->st_uid);
+  header_set_gid(header, sb->st_gid);
+  header_set_size(header, sb->st_size, );
+  header_set_mtime(header, sb->timespec->st_mtime);
+ 
   /**prefix_name_split(path);
   header_set_name(header, );*/
-
+   
   return header;
 }
+
+void traverse_to_root(struct stat* sb, struct stat* sb_list, char *path){
+   int i;
+   long prev_i;
+   int first;
+
+   first = 1;
+   prev_i= 0; /*default value should never be used.*/
+   i = 0;
+   sb_list[i] = *sb;
+   i++;
+   while((sb->st_ino != prev_i) || first)
+   {
+      chdir("../");
+      prev_i = sb->st_ino;
+      stat("./", sb);
+      sb_list[i] = *sb;
+      i++;
+
+      first = 0;
+      /*This is a waste of an assignment every time except the first time.*/
+   }
+   create_path(path, sb_list, i-OFF_SET);
+   return;
+}
+
+
