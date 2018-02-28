@@ -5,6 +5,37 @@
 /*This file's purpose is to store helper functions to
  Archive files for mytar. */
 
+
+static int insert_special_int(char*where, size_t size, int32_t val){
+   /* For interoperability with GNU tar.  GNU seems to
+      * * set the highorder bit of the first byte, then
+      * * treat the rest of the field as a binary integer
+      * * in network byte order.
+      * * Insert the given integer into the given field
+      * * using this technique.  Returns 0 on success, nonzero
+      * * otherwise
+      * **/
+   int err=0;
+   if( val<0||( size< sizeof(val)) ){
+      /* if its negative, bit 31 is set and we cant use the flag
+      * * if len is too small, we cant write it.  Either way, were
+      * * done.
+      * *
+      */
+      err++;
+   }
+   else{
+      /* game on....**/
+      memset(where, 0, size);
+      /*  Clear out the buffer **/
+      *(int32_t *)(where+size-sizeof(val)) = htonl(val);
+      /* place the int **/
+      *where|= 0x80;
+      /* set that highorder bit **/
+   }
+   return err;
+}
+
 static void clear_char_array(char *array, int size){
   int i;
   for(i=0; i< size; i++){
@@ -23,7 +54,8 @@ static void header_set_prefix(Header* header, char* prefix_name){
 /*given: the path (aquired by getpwd()), a char array of 100, and a char array size 155*/
 static void prefix_name_split(char*path, char*name, char* prefix){
   int offset;
-
+  clear_char_array(name, 100);
+  clear_char_array(prefix, 155);
   if(strlen(path) > 100){
     offset = strlen(path) - 100;
     strcpy(name, (path + offset));
@@ -43,6 +75,10 @@ static void header_set_mode(Header *header, mode_t st_mode){
 
     clear_char_array(mode, 8);
     i = 0;
+    if(st_mode > MAX_OCTAL_IN_DECIMAL){
+       insert_special_int(header->mode, 8, st_mode);
+       return;      
+    }
     while(i <= 6){
       mode[6-i] = (char) ((st_mode % 8) + ASCII_NUM_OFFSET);
       st_mode /= 8;
@@ -59,7 +95,14 @@ static void header_set_uid(Header *header, uid_t uid){
   int i;
 
   clear_char_array(u,8);
-
+  
+  header->uidflag = 0;
+  if(uid > MAX_OCTAL_IN_DECIMAL){
+      insert_special_int(header->uid, 8, uid);
+      header->uidflag = 1;
+      return;
+  }
+  
   i = 0;
   while(i <= 6){
     u[6-i] = (char) ((uid % 8) + ASCII_NUM_OFFSET);
@@ -76,6 +119,12 @@ static void header_set_gid(Header *header, gid_t gid){
 
   clear_char_array(g, 8);
 
+  header->gidflag = 0;
+  if(gid > MAX_OCTAL_IN_DECIMAL){
+      insert_special_int(header->gid, 8, gid);
+      header->gidflag = 1;
+      return;
+  }
   i = 0;
   while(i <= 6){
     g[6-i] = (char) ((gid % 8) + ASCII_NUM_OFFSET);
@@ -100,8 +149,8 @@ static void header_set_size(Header *header, off_t size, mode_t mode){
     return;
   }
   else{
-    while(i < 11){
-      header_size[11-i] = (char) ((size % 8) + ASCII_NUM_OFFSET);
+    while(i <= 10){
+      header_size[10-i] = (char) ((size % 8) + ASCII_NUM_OFFSET);
       size /= 8;
       i++;
     }
@@ -120,7 +169,7 @@ static void header_set_mtime(Header *header, time_t timespec){
     timespec /= 8;
     i++;
   }
-  tim[11] = '\0'; /* Changed index from 12 to 11, to be in correct range */
+  tim[11] = '\0';
   strcpy(header->mtime, tim);
   return ;
 }
@@ -149,11 +198,12 @@ static void header_set_linkname(Header * header, mode_t mode, char* linkname){
   }
 }
 
-static int header_compute_chksum(Header *header, char* field){
+static int header_compute_chksum(Header *header, char* field, int size){
    int i;
    int count;
    i = 0; /* initialized i here --A */
-   while(field[i] != '\0')
+   count = 0;
+   while(i < size)
    {
       count += field[i];
       i++;
@@ -178,26 +228,37 @@ static void header_set_gname(Header* header, gid_t gid){
 static void header_set_chksum(Header *header)
 {
    int c;
+   int i;
+   i = 0;
    char chksum[8];
+   clear_char_array(chksum, 8);
    c = 0;
-   c += header_compute_chksum(header, header->devminor);
-   c +=header_compute_chksum(header, header->devmajor);
+   c += header_compute_chksum(header, header->devminor, 8);
+   c += header_compute_chksum(header, header->devmajor, 8);
    c += USTAR_ASCII_SUM;
    c += VERSION_ASCII_SUM;
-   c += header_compute_chksum(header, header->gname);
-   c += header_compute_chksum(header, header->uname);
-   c += header_compute_chksum(header, header->linkname);
-   c +=header->typeflag;
-   c += header_compute_chksum(header, header->mtime);
-   c += header_compute_chksum(header, header->size);
-   c += header_compute_chksum(header, header->name);
-   c += header_compute_chksum(header, header->mode);
-   c += header_compute_chksum(header, header->uid);
-   c += header_compute_chksum(header, header->gid);
-   c += header_compute_chksum(header, header->prefix);
-   
-   sprintf(chksum, "%o", c);
-   strcpy(header->chksum, chksum);
+   c += header_compute_chksum(header, header->gname, 32);
+   c += header_compute_chksum(header, header->uname, 32);
+   c += header_compute_chksum(header, header->linkname, 100);
+   c += header->typeflag;
+   c += header_compute_chksum(header, header->mtime, 12);
+   c += header_compute_chksum(header, header->size, 12);
+   c += header_compute_chksum(header, header->name, 100);
+   c += header_compute_chksum(header, header->mode, 8);
+   c += header_compute_chksum(header, header->uid, 8);
+   c += header_compute_chksum(header, header->gid, 8);
+   c += header_compute_chksum(header, header->prefix, 155); 
+   while(i <= 6){
+      chksum[6-i] = (char) ((c % 8) + ASCII_NUM_OFFSET);
+      c /= 8;
+      i++;
+    }
+    chksum[7] = '\0';
+    strcpy(header->chksum, chksum);
+  
+   chksum[7] = '\0';
+   strncpy(header->chksum, chksum, 8);
+
    return;
 }
 
@@ -235,11 +296,11 @@ Header * create_header(char * path){
   return header;
 }
 
-
-
 void traverse_down_one(char * path){
         
 }
+
+
 
 void traverse_to_root(struct stat* sb, struct stat* sb_list, char *path){
    int i;
@@ -267,23 +328,23 @@ void traverse_to_root(struct stat* sb, struct stat* sb_list, char *path){
 }
 
 void write_header(Header *header, int fd){
-   
-   write(fd,header->name, sizeof(uint8_t)*100);
-   write(fd, header->mode, sizeof(uint8_t)*8);
-   write(fd, header->uid, sizeof(uint8_t)*8);
-   write(fd, header->gid, sizeof(uint8_t)*8);
-   write(fd, header->size, sizeof(uint8_t)*12);
-   write(fd, header->mtime, sizeof(uint8_t)*12);
-   write(fd, &header->chksum, sizeof(uint8_t)*8);
-   write(fd, &header->typeflag, sizeof(uint8_t));
-   write(fd, header->linkname, sizeof(uint8_t)*100);
-   write(fd, &header->magic, sizeof(uint8_t)*6);
-   write(fd, &header->version, sizeof(uint8_t)*2);
-   write(fd, header->uname, sizeof(uint8_t)*32);
-   write(fd, header->gname, sizeof(uint8_t)*32);
-   write(fd, &header->devmajor, sizeof(uint8_t)*8);
-   write(fd, &header->devminor, sizeof(uint8_t)*8);
-   write(fd, header->prefix, sizeof(uint8_t)*155);
+
+   write(fd,header->name, sizeof(header->name));
+   write(fd, header->mode, sizeof(header->mode));
+   write(fd, header->uid, sizeof(header->uid));
+   write(fd, header->gid, sizeof(header->gid));
+   write(fd, header->size, sizeof(header->size));
+   write(fd, header->mtime, sizeof(header->mtime));
+   write(fd, header->chksum, sizeof(header->chksum));
+   write(fd, &header->typeflag, sizeof(char));
+   write(fd, header->linkname, sizeof(header->linkname));
+   write(fd, header->magic, sizeof(header->magic));
+   write(fd, header->version, sizeof(header->version));
+   write(fd, header->uname, sizeof(header->uname));
+   write(fd, header->gname, sizeof(header->gname));
+   write(fd, header->devmajor, sizeof(header->devmajor));
+   write(fd, header->devminor, sizeof(header->devminor));
+   write(fd, header->prefix, sizeof(header->prefix));
 }
 
 
@@ -291,15 +352,25 @@ void write_header(Header *header, int fd){
 void write_file(int rfd, int wfd){
    char buffer[BLOCK_SIZE];
    int valid_read;
-   while((valid_read = read(rfd, buffer, sizeof(buffer))) != INVALID_READ){
-      write(wfd, buffer, sizeof(buffer));
+   clear_char_array(buffer, BLOCK_SIZE);
+
+   while((valid_read = read(rfd, buffer, sizeof(buffer))) >  INVALID_READ){
+         write(wfd, buffer, sizeof(buffer));
+         clear_char_array(buffer, BLOCK_SIZE);
    }
+
+   clear_char_array(buffer, BLOCK_SIZE);
+   write(wfd, buffer, sizeof(buffer));
+   write(wfd, buffer, sizeof(buffer));
 }
+
+
 
 /*Given a path and a tarfile archive the entry at the given path into the tarfile. */
 void write_entry(char * path, char *tarfile, int rfd, int wfd){
    Header *header;
    struct stat* sb;
+   sb = (struct stat *) malloc(sizeof(struct stat));
    lstat(path, sb);
    header = (Header*) malloc(sizeof(Header));
    header = create_header(path);

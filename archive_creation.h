@@ -10,7 +10,8 @@
 #define USTAR_ASCII_SUM 559
 #define VERSION_ASCII_SUM 96
 #define BLOCK_SIZE 512
-#define INVALID_READ 1
+#define INVALID_READ 0
+#define MAX_OCTAL_IN_DECIMAL 2097151
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -26,6 +27,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <arpa/inet.h>
 
 typedef struct {
    char name[100];
@@ -44,13 +46,14 @@ typedef struct {
    char  devmajor[8];
    char  devminor[8];
    char   prefix[155];
-
+   int uidflag;
+   int gidflag;
 } Header;
 
 
 void write_header(Header * header, int fd);
 Header *create_header(char * path);
 void traverse_paths(char* pathname);
-
+void write_entry(char *path, char *tarfile, int rfd, int wfd);
 
 #endif

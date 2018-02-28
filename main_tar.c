@@ -20,16 +20,25 @@ int main(int argc, char* argv[]){
      exit(EXIT_FAILURE);
    }
      
-   wfd = open(argv[3], O_WRONLY | O_CREAT | O_TRUNC, 0666);
-   rfd = open(argv[4], O_RDONLY);
+   if((wfd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0){
+      printf("Can't open the write file\n");
+      exit(EXIT_FAILURE);
+   }
+
+   if((rfd = open(argv[3], O_RDONLY)) < 0){
+      printf("Can't open the read file\n");
+      close(wfd);
+      exit(EXIT_FAILURE);
+   }
+
    /*dirp = opendir(argv[2]);*/
    /*direntp = readdir(dirp);*/
    /*header = create_header(argv[2]);
    write_header(header, outfd);  */
 
-   write_entry(argv[2],argv[4], rfd, wfd); 
-   
-   close(outfd);
+   write_entry(argv[3],argv[2], rfd, wfd); 
+  
+   close(wfd);
    close(rfd);
    return 0;
 
