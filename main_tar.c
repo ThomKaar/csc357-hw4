@@ -5,10 +5,10 @@
 
 int main(int argc, char* argv[]){
 
-   DIR *dirp;
-   struct dirent *direntp;
-   Header * header;
-   int outfd;
+   /*DIR *dirp;*/
+   /*struct dirent *direntp;*/
+   int rfd;
+   int wfd;
 
    if(!flags_has_f(argv)){
       perror("mytar");
@@ -20,11 +20,17 @@ int main(int argc, char* argv[]){
      exit(EXIT_FAILURE);
    }
      
-   outfd = open("single_header.out", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-   dirp = opendir(argv[2]);
-   direntp = readdir(dirp);
-   header = create_header(argv[2], direntp);
-   write_header(header, outfd);  
+   wfd = open(argv[3], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+   rfd = open(argv[4], O_RDONLY);
+   /*dirp = opendir(argv[2]);*/
+   /*direntp = readdir(dirp);*/
+   /*header = create_header(argv[2]);
+   write_header(header, outfd);  */
+
+   write_entry(argv[2],argv[4], rfd, wfd); 
+   
+   close(outfd);
+   close(rfd);
    return 0;
 
 }

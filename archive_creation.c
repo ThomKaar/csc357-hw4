@@ -178,6 +178,7 @@ static void header_set_gname(Header* header, gid_t gid){
 static void header_set_chksum(Header *header)
 {
    int c;
+   char chksum[8];
    c = 0;
    c += header_compute_chksum(header, header->devminor);
    c +=header_compute_chksum(header, header->devmajor);
@@ -188,24 +189,24 @@ static void header_set_chksum(Header *header)
    c += header_compute_chksum(header, header->linkname);
    c +=header->typeflag;
    c += header_compute_chksum(header, header->mtime);
-   header_compute_chksum(header, header->size);
-   header_compute_chksum(header, header->name);
-   header_compute_chksum(header, header->mode);
-   header_compute_chksum(header, header->uid);
-   header_compute_chksum(header, header->gid);
-   header_compute_chksum(header, header->prefix);
+   c += header_compute_chksum(header, header->size);
+   c += header_compute_chksum(header, header->name);
+   c += header_compute_chksum(header, header->mode);
+   c += header_compute_chksum(header, header->uid);
+   c += header_compute_chksum(header, header->gid);
+   c += header_compute_chksum(header, header->prefix);
    
+   sprintf(chksum, "%o", c);
+   strcpy(header->chksum, chksum);
    return;
 }
 
-Header * create_header(char * path, struct dirent* direntp){
+Header * create_header(char * path){
   char name[100];
   char prefix[155];
   struct stat *sb;
   Header *header = (Header*) malloc(sizeof(Header));
   sb = (struct stat *) malloc(sizeof(struct stat));
-
-  header->chksum = 0;
 
   lstat(path, sb);
  
@@ -272,12 +273,12 @@ void write_header(Header *header, int fd){
    write(fd, header->uid, sizeof(uint8_t)*8);
    write(fd, header->gid, sizeof(uint8_t)*8);
    write(fd, header->size, sizeof(uint8_t)*12);
-   write(fd, header->mtime, sizeof(uint8_t)*10);
-   write(fd, &header->chksum, sizeof(uint8_t));
+   write(fd, header->mtime, sizeof(uint8_t)*12);
+   write(fd, &header->chksum, sizeof(uint8_t)*8);
    write(fd, &header->typeflag, sizeof(uint8_t));
    write(fd, header->linkname, sizeof(uint8_t)*100);
    write(fd, &header->magic, sizeof(uint8_t)*6);
-   write(fd, &header->version, sizeof(uint8_t)*3);
+   write(fd, &header->version, sizeof(uint8_t)*2);
    write(fd, header->uname, sizeof(uint8_t)*32);
    write(fd, header->gname, sizeof(uint8_t)*32);
    write(fd, &header->devmajor, sizeof(uint8_t)*8);
@@ -286,3 +287,25 @@ void write_header(Header *header, int fd){
 }
 
 
+/*Given a file path to write blocks of BLOCK_SIZE bytes of data*/
+void write_file(int rfd, int wfd){
+   char buffer[BLOCK_SIZE];
+   int valid_read;
+   while((valid_read = read(rfd, buffer, sizeof(buffer))) != INVALID_READ){
+      write(wfd, buffer, sizeof(buffer));
+   }
+}
+
+/*Given a path and a tarfile archive the entry at the given path into the tarfile. */
+void write_entry(char * path, char *tarfile, int rfd, int wfd){
+   Header *header;
+   struct stat* sb;
+   lstat(path, sb);
+   header = (Header*) malloc(sizeof(Header));
+   header = create_header(path);
+   write_header(header, wfd); 
+   if(S_ISREG(sb->st_mode)){
+      write_file(rfd, wfd);   
+   }
+   free(header);
+}

@@ -9,6 +9,8 @@
 #define OFF_SET 2
 #define USTAR_ASCII_SUM 559
 #define VERSION_ASCII_SUM 96
+#define BLOCK_SIZE 512
+#define INVALID_READ 1
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -31,12 +33,12 @@ typedef struct {
    char uid[8];
    char gid[8];
    char size[12];
-   char mtime[10];
-   unsigned long chksum;
+   char mtime[12];
+   char chksum[8];
    char typeflag;
    char linkname[100];
    char magic[6];
-   char version[3];
+   char version[2];
    char     uname[32];
    char     gname[32];
    char  devmajor[8];
@@ -47,7 +49,7 @@ typedef struct {
 
 
 void write_header(Header * header, int fd);
-Header *create_header(char * path, struct dirent* direntp);
+Header *create_header(char * path);
 void traverse_paths(char* pathname);
 
 
