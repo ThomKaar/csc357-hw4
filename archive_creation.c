@@ -149,15 +149,16 @@ static void header_set_linkname(Header * header, mode_t mode, char* linkname){
   }
 }
 
-static void header_compute_chksum(Header *header, char* field){
+static int header_compute_chksum(Header *header, char* field){
    int i;
+   int count;
    i = 0; /* initialized i here --A */
    while(field[i] != '\0')
    {
-      header->chksum += field[i];
+      count += field[i];
       i++;
    }
-   return;
+   return count;
 }
 
 static void header_set_uname(Header* header, uid_t uid){
@@ -176,21 +177,24 @@ static void header_set_gname(Header* header, gid_t gid){
 
 static void header_set_chksum(Header *header)
 {
-   header_compute_chksum(header, header->devminor);
-   header_compute_chksum(header, header->devmajor);
-   header->chksum += USTAR_ASCII_SUM;
-   header->chksum += VERSION_ASCII_SUM;
-   header_compute_chksum(header, header->gname);
-   header_compute_chksum(header, header->uname);
-   header_compute_chksum(header, header->linkname);
-   header->chksum += header->typeflag;
-   header_compute_chksum(header, header->mtime);
+   int c;
+   c = 0;
+   c += header_compute_chksum(header, header->devminor);
+   c +=header_compute_chksum(header, header->devmajor);
+   c += USTAR_ASCII_SUM;
+   c += VERSION_ASCII_SUM;
+   c += header_compute_chksum(header, header->gname);
+   c += header_compute_chksum(header, header->uname);
+   c += header_compute_chksum(header, header->linkname);
+   c +=header->typeflag;
+   c += header_compute_chksum(header, header->mtime);
    header_compute_chksum(header, header->size);
    header_compute_chksum(header, header->name);
    header_compute_chksum(header, header->mode);
    header_compute_chksum(header, header->uid);
    header_compute_chksum(header, header->gid);
    header_compute_chksum(header, header->prefix);
+   
    return;
 }
 
@@ -225,6 +229,7 @@ Header * create_header(char * path, struct dirent* direntp){
   header_set_uname(header, sb->st_uid);
   header_set_gname(header, sb->st_gid);
   header_set_chksum(header);
+ 
   
   return header;
 }
@@ -264,11 +269,11 @@ void write_header(Header *header, int fd){
    
    write(fd,header->name, sizeof(uint8_t)*100);
    write(fd, header->mode, sizeof(uint8_t)*8);
-   write(fd, &header->chksum, sizeof(uint8_t));
    write(fd, header->uid, sizeof(uint8_t)*8);
    write(fd, header->gid, sizeof(uint8_t)*8);
    write(fd, header->size, sizeof(uint8_t)*12);
    write(fd, header->mtime, sizeof(uint8_t)*10);
+   write(fd, &header->chksum, sizeof(uint8_t));
    write(fd, &header->typeflag, sizeof(uint8_t));
    write(fd, header->linkname, sizeof(uint8_t)*100);
    write(fd, &header->magic, sizeof(uint8_t)*6);

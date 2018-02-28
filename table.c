@@ -47,6 +47,8 @@ void traverse_deep(char *path){
    }
 }
 
+
+
 int main(int argc, char *argv[]){
    char * path;
 
