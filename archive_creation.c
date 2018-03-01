@@ -413,3 +413,7 @@ void write_entry(char * path, char *tarfile, int rfd, int wfd){
    }
    free(header);
 }
+
+void write_entries(char *path, char *tarfile, int rfd, int wfd){
+
+}
