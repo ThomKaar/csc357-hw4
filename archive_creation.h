@@ -3,7 +3,7 @@
 #ifndef ARCHIVE_CREATION_H
 #define ARCHIVE_CREATION_H
 
-#define _BSD_SOURCE
+/*#define _BSD_SOURCE*/
 
 #define ASCII_NUM_OFFSET 48
 #define OFF_SET 2
@@ -12,6 +12,25 @@
 #define BLOCK_SIZE 512
 #define INVALID_READ 0
 #define MAX_OCTAL_IN_DECIMAL 2097151
+#define CHKSUM_OFFSET 224
+
+#define NAME_SIZE 100
+#define MODE_LEN 8
+#define UID_LEN 8
+#define GID_LEN 8
+#define SIZE_LEN 12
+#define MTIME_LEN 12
+#define CHKSUM_LEN 8
+#define TYPEFLAG_LEN 1
+#define LINKNAME_LEN 100
+#define MAGIC_LEN 6
+#define VERSION_LEN 2
+#define UNAME_LEN 32
+#define GNAME_LEN 32
+#define DEVMAJOR_LEN 8
+#define DEVMINOR_LEN 8
+#define PREFIX_LEN 155
+
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -55,5 +74,5 @@ void write_header(Header * header, int fd);
 Header *create_header(char * path);
 void traverse_paths(char* pathname);
 void write_entry(char *path, char *tarfile, int rfd, int wfd);
-
+static void shove_it_in(char *buffer, char *field, int index, int size);
 #endif

@@ -10,7 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 
-/*This file is to create all helper functions for the table listing functionality for mytar. */
+/*This file is to create all helper functions for the 
+ * table listing functionality for mytar. */
 
 /*This function goes one more directory deep
  * it assumes name is a directory and changes the current dirctory
@@ -38,7 +39,8 @@ void traverse_deep(char *path){
          path -= strlen(direntp->d_name);
       }
       else{
-         file_path  = (char *) malloc( (strlen(path)+strlen(direntp->d_name)) * sizeof(char) );
+         file_path  = (char *) malloc( (strlen(path)+
+                  strlen(direntp->d_name)) * sizeof(char) );
          strcpy(file_path, path);
          strcat(file_path, direntp->d_name);
          printf("Current path is %s", file_path);

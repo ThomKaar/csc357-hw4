@@ -51,7 +51,8 @@ static void header_set_prefix(Header* header, char* prefix_name){
   strcpy(header->prefix, prefix_name);
 }
 
-/*given: the path (aquired by getpwd()), a char array of 100, and a char array size 155*/
+/*given: the path (aquired by getpwd()), a char array of 100, 
+ * and a char array size 155*/
 static void prefix_name_split(char*path, char*name, char* prefix){
   int offset;
   clear_char_array(name, 100);
@@ -85,6 +86,9 @@ static void header_set_mode(Header *header, mode_t st_mode){
       i++;
     }
     mode[7] = '\0';
+    mode[0] = '0';
+    mode[1] = '0';
+    mode[2] = '0';
     strncpy(header->mode, mode, 8);
 }
 
@@ -227,38 +231,11 @@ static void header_set_gname(Header* header, gid_t gid){
 
 static void header_set_chksum(Header *header)
 {
-   int c;
    int i;
    i = 0;
-   char chksum[8];
-   clear_char_array(chksum, 8);
-   c = 0;
-   c += header_compute_chksum(header, header->devminor, 8);
-   c += header_compute_chksum(header, header->devmajor, 8);
-   c += USTAR_ASCII_SUM;
-   c += VERSION_ASCII_SUM;
-   c += header_compute_chksum(header, header->gname, 32);
-   c += header_compute_chksum(header, header->uname, 32);
-   c += header_compute_chksum(header, header->linkname, 100);
-   c += header->typeflag;
-   c += header_compute_chksum(header, header->mtime, 12);
-   c += header_compute_chksum(header, header->size, 12);
-   c += header_compute_chksum(header, header->name, 100);
-   c += header_compute_chksum(header, header->mode, 8);
-   c += header_compute_chksum(header, header->uid, 8);
-   c += header_compute_chksum(header, header->gid, 8);
-   c += header_compute_chksum(header, header->prefix, 155); 
-   while(i <= 6){
-      chksum[6-i] = (char) ((c % 8) + ASCII_NUM_OFFSET);
-      c /= 8;
-      i++;
-    }
-    chksum[7] = '\0';
-    strcpy(header->chksum, chksum);
-  
-   chksum[7] = '\0';
-   strncpy(header->chksum, chksum, 8);
-
+   for(; i < 8; i++){
+      header->chksum[i] = ' ';  
+   }
    return;
 }
 
@@ -287,12 +264,12 @@ Header * create_header(char * path){
   header_set_size(header, sb->st_size, sb->st_mode);
   header_set_mtime(header, sb->st_mtime);
   header_set_typeflag(header, sb->st_mode);
-  header_set_linkname(header, sb->st_mode, name); /*TODO is this the same name as above?*/
+  header_set_linkname(header, sb->st_mode, name); 
+  /*TODO is this the same name as above?*/
   header_set_uname(header, sb->st_uid);
   header_set_gname(header, sb->st_gid);
   header_set_chksum(header);
- 
-  
+
   return header;
 }
 
@@ -327,24 +304,79 @@ void traverse_to_root(struct stat* sb, struct stat* sb_list, char *path){
    return;
 }
 
-void write_header(Header *header, int fd){
+static void shove_it_in(char* buffer, char* field, int index, int length){
+   int j;
+   for(j = 0; j < length; j++){
+      buffer[index+j] = field[j];  
+   }
+}
 
-   write(fd,header->name, sizeof(header->name));
-   write(fd, header->mode, sizeof(header->mode));
-   write(fd, header->uid, sizeof(header->uid));
-   write(fd, header->gid, sizeof(header->gid));
-   write(fd, header->size, sizeof(header->size));
-   write(fd, header->mtime, sizeof(header->mtime));
-   write(fd, header->chksum, sizeof(header->chksum));
-   write(fd, &header->typeflag, sizeof(char));
-   write(fd, header->linkname, sizeof(header->linkname));
-   write(fd, header->magic, sizeof(header->magic));
-   write(fd, header->version, sizeof(header->version));
-   write(fd, header->uname, sizeof(header->uname));
-   write(fd, header->gname, sizeof(header->gname));
-   write(fd, header->devmajor, sizeof(header->devmajor));
-   write(fd, header->devminor, sizeof(header->devminor));
-   write(fd, header->prefix, sizeof(header->prefix));
+static int sum_up(unsigned char * buffer, int size){
+   int i, count;
+   i = 0;
+   count = 0;
+   while(i < size){
+      count += (int)buffer[i];
+      i += 1;
+   }
+   return count;
+}
+
+void write_header(Header *header, int fd){
+   char buffer[BLOCK_SIZE];
+   unsigned char *bptr;
+   char chksum[8];
+   int i, j, k,total_sum;
+   i = 0;
+   j = 0;
+   k = 0;
+   clear_char_array(buffer, BLOCK_SIZE);
+   
+   shove_it_in(buffer,header->name, i, NAME_SIZE);
+   i += NAME_SIZE;
+   shove_it_in(buffer,header->mode, i, MODE_LEN);
+   i += MODE_LEN;
+   shove_it_in(buffer,header->uid, i, UID_LEN);
+   i += UID_LEN;
+   shove_it_in(buffer, header->gid, i, GID_LEN);
+   i += GID_LEN;
+   shove_it_in(buffer, header->size, i, SIZE_LEN);
+   i += SIZE_LEN;
+   shove_it_in(buffer, header->mtime, i, MTIME_LEN);
+   i += MTIME_LEN;
+   j = i;
+   shove_it_in(buffer, header->chksum, i, CHKSUM_LEN);
+   i += CHKSUM_LEN;
+   shove_it_in(buffer, &header->typeflag, i, TYPEFLAG_LEN);
+   i += TYPEFLAG_LEN;
+   shove_it_in(buffer, header->linkname, i, LINKNAME_LEN);
+   i += LINKNAME_LEN;
+   shove_it_in(buffer, header->magic, i, MAGIC_LEN);
+   i += MAGIC_LEN;
+   shove_it_in(buffer, header->version, i, VERSION_LEN);
+   i += VERSION_LEN;
+   shove_it_in(buffer, header->uname, i, UNAME_LEN);
+   i += UNAME_LEN;
+   shove_it_in(buffer, header->gname, i, GNAME_LEN);
+   i += GNAME_LEN;
+   shove_it_in(buffer, header->devmajor, i, DEVMAJOR_LEN);
+   i += DEVMAJOR_LEN;
+   shove_it_in(buffer, header->devminor, i, DEVMINOR_LEN);
+   i += DEVMINOR_LEN;
+   shove_it_in(buffer, header->prefix, i, PREFIX_LEN);
+   i += DEVMINOR_LEN;
+  
+   bptr = buffer;
+   total_sum = sum_up(bptr, BLOCK_SIZE);
+   while(k <= 6){
+      chksum[6-k] = (char) ((total_sum % 8) + ASCII_NUM_OFFSET);
+      total_sum /= 8;
+      k++;
+   }
+   chksum[7] = '\0';
+   strcpy(header->chksum, chksum);
+   shove_it_in(buffer, header->chksum, j, CHKSUM_LEN);
+   write(fd, buffer, BLOCK_SIZE);
 }
 
 
@@ -366,7 +398,8 @@ void write_file(int rfd, int wfd){
 
 
 
-/*Given a path and a tarfile archive the entry at the given path into the tarfile. */
+/*Given a path and a tarfile archive the 
+ * entry at the given path into the tarfile. */
 void write_entry(char * path, char *tarfile, int rfd, int wfd){
    Header *header;
    struct stat* sb;
