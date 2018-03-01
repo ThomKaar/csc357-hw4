@@ -2,84 +2,146 @@
 
 #include "directory_struct.h"
 
-D_Node * new_d_node(){
-   D_Node *new;
-   new = malloc(sizeof(D_Node));
-   new->entries = NULL;
-   new->stat = NULL;
-   new->dir_ent = NULL;
+struct stat *safe_stat(const char *path, struct stat *buf){
+   if (!lstat(path, buf))
+   {
+      perror("safe stat");
+      exit(EXIT_FAILURE);
+   }
+   return buf;
 }
 
-void set_stat(D_Node *dir_node, struct stat* sb){
-  dir_node->stat = sb;
+void *safe_malloc(size_t size){
+   void *new = malloc(size);
+   if(new == NULL)
+   {
+      perror("safemalloc()");
+      exit(EXIT_FAILURE);
+   }
+   return new;
+}
+
+int safe_strlen(char *str){
+  if(str == NULL){
+    return 0;
+  }
+  return strlen(str);
+}
+
+char *mycwd(){
+  char* directory;
+  directory = (char*) safe_malloc(sizeof(char) * 155);
+  if(getcwd(directory, 155)){
+    perror("mycwd");
+    exit(EXIT_FAILURE);
+  }
+  return directory;
+}
+
+D_Child* new_child(D_Node* d_node){
+  D_Child* child = (D_Child*) safe_malloc(sizeof(D_Child));
+  child->node = d_node;
+  child->next = NULL;
+  return child;
+}
+
+Child_List* new_list(){
+  Child_List* list = (Child_List*) safe_malloc(sizeof(Child_List));
+  list->front = NULL;
+  list->back = NULL;
+  list->size = 0;
+  return list;
+}
+
+void list_add_child(Child_List* list, D_Node* d_node){
+  D_Child* child;
+  child = new_child(d_node);
+  if(list->size == 0){
+    list->front = child;
+    list->back = child;
+    list->size = 1;
+  }else{
+    list->back->next = child;
+    list->back = child;
+    list->size = list->size + 1;
+  }
+}
+
+D_Node * new_d_node(){
+   D_Node *new;
+   new = safe_malloc(sizeof(D_Node));
+   new->entries = new_list();
+   new->sb = NULL;
+   new->dir_ent = NULL;
+   return new;
+}
+
+void set_stat(D_Node *dir_node, struct stat* stat_buf){
+  dir_node->sb = stat_buf;
 }
 
 void set_dirent(D_Node *dir_node, struct dirent* dp){
   dir_node->dir_ent = dp;
 }
 
-D_Child* new_child(D_Node* d_node){
-  D_Child* child = (D_Child) malloc(sizeof(D_Child));
-  child->node = d_node;
-  next = NULL;
+void set_name(D_Node *dir_node, char *dir_name){
+  char* new_name = (char*) safe_malloc(sizeof(char)
+                                          * (safe_strlen(dir_name) + 1));
+  strcpy(new_name, dir_name);
+  dir_node->name = new_name;
 }
 
-Child_List* new_list(D_Node* d_node){
-  Child_List* list = (Child_List) malloc(sizeof(Child_List));
-  D_Child* child = new_child(d_node);
-  list->front = child;
-  list->back = child;
-  list->size = 1;
+void add_child(D_Node *dir_node, D_Node *d_node){
+  list_add_child(dir_node->entries, d_node);
 }
 
-void add_child(Child_List* list, D_Node* d_node){
-  D_Child* new_child = new_child(d_node);
-  list->back->next = new_child;
-  list->back = new_child;
-  list->size = list->size++;
+void print_node(D_Node* d_node){
+  printf("%s\n", d_node->name);
 }
 
-D_node* create_tree(char* pathname){
+D_Node* create_tree(char* pathname){
   /* Initialize variables */
   DIR* dp;
   struct stat* stat_buf;
-  struct dirent* dir_ent;
+  struct dirent* dir_entry;
   D_Node* dir_node;
 
   dp = opendir(pathname);
-  lstat(pathname, stat_buf);
+  stat_buf = NULL;
+  safe_stat(pathname, stat_buf);
 
   /* Make root D_node */
   dir_node = new_d_node();
-  dir_ent = readdir(dp);
-  dir_node->sb = stat_buf;
-  dir_node->dir_ent = dp;
-  /* Make root D_node */
+  set_stat(dir_node, stat_buf);
+  /* Make the root/parent D_node */
 
-  while(dirent){
+  while((dir_entry = readdir(dp))){
     D_Node* d_node;
-    struct stat* stat_buf;
+    struct stat* s_buf;
+    s_buf = NULL;
 
-    lstat(dirent->d_name, stat_buf);
-    d_node = new_d_node();
-    d_node->sb = stat_buf;
-    d_node->dir_ent = NULL;
-    if(S_ISDIR(d_node->stat->mode_t)){
-      struct dirent* dir_ent;
-
-      create_tree(dirent->d_name);
-
+    /* IF the directories are not named "." or "..", exectute the remainder */
+    if(!strcmp(dir_entry->d_name, ".") || !strcmp(dir_entry->d_name, "..")){
+      continue;
     }
 
-    dirent = readdir(dp);
+    d_node = new_d_node();
+    safe_stat(dir_entry->d_name, s_buf);
+    set_stat(d_node, s_buf);
+    set_dirent(d_node, dir_entry);
+    set_name(d_node, dir_entry->d_name);
+    print_node(d_node);
+    if(S_ISDIR(d_node->sb->st_mode)){
+      /*struct dirent* new_dir_ent;
+      new_dir_ent = NULL;*/
+      printf("===================\n");
+      create_tree(dir_entry->d_name);
+      printf("===================\n");
+    }
+
+    /* add this d_node we just created to the D_Node from outside the loop */
+    add_child(dir_node, d_node);
   }
+
+  return dir_node;
 }
-/* Tommy's old code, delete when passed this point
-void add_DIR_child(D_Node * d_node, D_Child* d_child){
-   if(d_node->entries == NULL){
-      d_node->entries =  d_child;
-   }
-   else{
-      add_childD_Node(d_node->entries->node, d_child);
-   }
-}*/
