@@ -273,37 +273,6 @@ Header * create_header(char * path){
   return header;
 }
 
-void traverse_down_one(char * path){
-        
-}
-
-
-
-void traverse_to_root(struct stat* sb, struct stat* sb_list, char *path){
-   int i;
-   long prev_i;
-   int first;
-
-   first = 1;
-   prev_i= 0; /*default value should never be used.*/
-   i = 0;
-   sb_list[i] = *sb;
-   i++;
-   while((sb->st_ino != prev_i) || first)
-   {
-      chdir("../");
-      prev_i = sb->st_ino;
-      stat("./", sb);
-      sb_list[i] = *sb;
-      i++;
-
-      first = 0;
-      /*This is a waste of an assignment every time except the first time.*/
-   }
-   /*create_path(path, sb_list, i-OFF_SET);*/
-   return;
-}
-
 static void shove_it_in(char* buffer, char* field, int index, int length){
    int j;
    for(j = 0; j < length; j++){
@@ -316,14 +285,15 @@ static int sum_up(unsigned char * buffer, int size){
    i = 0;
    count = 0;
    while(i < size){
-      count += (int)buffer[i];
+      count += (unsigned char)buffer[i];
       i += 1;
    }
    return count;
 }
 
 void write_header(Header *header, int fd){
-   char buffer[BLOCK_SIZE];
+   
+   unsigned char buffer[BLOCK_SIZE];
    unsigned char *bptr;
    char chksum[8];
    int i, j, k,total_sum;
@@ -365,7 +335,8 @@ void write_header(Header *header, int fd){
    i += DEVMINOR_LEN;
    shove_it_in(buffer, header->prefix, i, PREFIX_LEN);
    i += DEVMINOR_LEN;
-  
+ 
+   printf("Checksum is : %s", header->chksum);
    bptr = buffer;
    total_sum = sum_up(bptr, BLOCK_SIZE);
    while(k <= 6){
@@ -373,8 +344,10 @@ void write_header(Header *header, int fd){
       total_sum /= 8;
       k++;
    }
+   printf("chksum octal is: %s\n", chksum);
    chksum[7] = '\0';
    strcpy(header->chksum, chksum);
+   printf("after strcpy: %s\n", chksum);
    shove_it_in(buffer, header->chksum, j, CHKSUM_LEN);
    write(fd, buffer, BLOCK_SIZE);
 }
@@ -392,11 +365,16 @@ void write_file(int rfd, int wfd){
    }
 
    clear_char_array(buffer, BLOCK_SIZE);
+   /*write(wfd, buffer, sizeof(buffer));
+   write(wfd, buffer, sizeof(buffer));*/
+}
+
+void write_last_two_blocks(int wfd){
+   char buffer[BLOCK_SIZE];
+   clear_char_array(buffer,BLOCK_SIZE);
    write(wfd, buffer, sizeof(buffer));
    write(wfd, buffer, sizeof(buffer));
 }
-
-
 
 /*Given a path and a tarfile archive the 
  * entry at the given path into the tarfile. */
@@ -404,6 +382,7 @@ void write_entry(char * path, char *tarfile, int rfd, int wfd){
    Header *header;
    struct stat* sb;
    sb = (struct stat *) malloc(sizeof(struct stat));
+   
    lstat(path, sb);
    header = (Header*) malloc(sizeof(Header));
    header = create_header(path);
@@ -414,6 +393,34 @@ void write_entry(char * path, char *tarfile, int rfd, int wfd){
    free(header);
 }
 
-void write_entries(char *path, char *tarfile, int rfd, int wfd){
-
+void write_entries(DIR* dirp, char *path, char *tarfile, int rfd, int wfd){
+   DIR * temp_dirp;
+   struct dirent *direntp;
+   struct stat *sb;
+   char *temp_path;
+   if((direntp = readdir(dirp)) <= INVALID_READ){
+      return;
+   }
+   else{
+      while(strcmp(direntp->d_name, ".") == 0 || 
+         strcmp(direntp->d_name, "..") == 0){
+         if((direntp = readdir(dirp)) <= INVALID_READ){
+            return;
+         }
+      }
+      temp_path = (char *) malloc(sizeof(char) * 
+            (strlen(direntp->d_name) + strlen(path))); 
+      strcpy(temp_path, path); 
+      strcat(temp_path, direntp->d_name);
+      write_entry(temp_path, tarfile, rfd, wfd);
+      sb = (struct stat *) malloc(sizeof(struct stat));
+      lstat(temp_path, sb);
+      if(S_ISDIR(sb->st_mode)){ 
+         temp_dirp = opendir(temp_path);
+         chdir(direntp->d_name);
+         write_entries(temp_dirp, temp_path, tarfile, rfd, wfd);
+         free(temp_path);
+      }
+      write_entries(dirp, path, tarfile, rfd, wfd);   
+   }
 }

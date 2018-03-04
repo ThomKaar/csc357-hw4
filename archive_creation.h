@@ -74,5 +74,8 @@ void write_header(Header * header, int fd);
 Header *create_header(char * path);
 void traverse_paths(char* pathname);
 void write_entry(char *path, char *tarfile, int rfd, int wfd);
+void write_entries(DIR *dir, char *path, char* tarfile, int rfd, int wfd);
+void write_last_two_blocks(int wfd);
 static void shove_it_in(char *buffer, char *field, int index, int size);
+
 #endif

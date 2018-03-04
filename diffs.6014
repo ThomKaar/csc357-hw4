@@ -1,0 +1,238 @@
+
+==========================================
+1) General test: no arguments  ((probably) ok)
+==========================================
+  --------------------------
+  Submitted's stdout:
+  --------------------------
+  --------------------------
+  Submitted's stderr:
+    Child process (6035) exited due to signal (Segmentation fault).
+  --------------------------
+
+==========================================
+2) General test: no C, T, or X  ((probably) ok)
+==========================================
+  --------------------------
+  Submitted's stdout:
+  --------------------------
+  --------------------------
+  Submitted's stderr:
+    mytar: Success
+  --------------------------
+
+==========================================
+3) General test: f switch with no filename  ((probably) ok)
+==========================================
+  --------------------------
+  Submitted's stdout:
+  --------------------------
+  --------------------------
+  Submitted's stderr:
+    mytar: Success
+  --------------------------
+
+==========================================
+4) General test: Trying to list a bad tarfile  (FAILURE)
+==========================================
+  --------------------------
+  Submitted's stdout:
+  --------------------------
+  --------------------------
+  Submitted's stderr:
+  --------------------------
+
+==========================================
+5) Creation test: One named file  (ok)
+==========================================
+  --------------------------
+  Submitted's stdout:
+    Checksum is :         0chksum octal is: 0012525
+    after strcpy: 0012525
+  --------------------------
+  --------------------------
+  Submitted's archive listing(sorted):
+    -r--r--r-- pn-cs357/domain users 181 2011-02-08 14:49 JustAFile
+  --------------------------
+
+==========================================
+6) Creation test: One named binary file  (ok)
+==========================================
+  --------------------------
+  Submitted's stdout:
+    Checksum is :         0chksum octal is: 0013657
+    after strcpy: 0013657
+  --------------------------
+  --------------------------
+  Submitted's archive listing(sorted):
+    -r--r--r-- pn-cs357/domain users 128 2011-02-08 14:49 JustABinaryFile
+  --------------------------
+
+==========================================
+7) Creation test: Two Named Files  (ok)
+==========================================
+  --------------------------
+  Submitted's stdout:
+    number of path_files is: 2
+    Checksum is :         0chksum octal is: 0012525
+    after strcpy: 0012525
+    Checksum is :         0chksum octal is: 0013657
+    after strcpy: 0013657
+  --------------------------
+  --------------------------
+  Submitted's archive listing(sorted):
+    -r--r--r-- pn-cs357/domain users 128 2011-02-08 14:49 JustABinaryFile
+    -r--r--r-- pn-cs357/domain users 181 2011-02-08 14:49 JustAFile
+  --------------------------
+
+==========================================
+8) Creation test: Three Named Files, one nonexistent  (ok)
+==========================================
+  --------------------------
+  Submitted's stdout:
+    number of path_files is: 3
+    Checksum is :         0chksum octal is: 0012525
+    after strcpy: 0012525
+    Can't open the read file
+    Checksum is :         0chksum octal is: 0013657
+    after strcpy: 0013657
+  --------------------------
+  --------------------------
+  Submitted's archive listing(sorted):
+    -r--r--r-- pn-cs357/domain users 128 2011-02-08 14:49 JustABinaryFile
+    -r--r--r-- pn-cs357/domain users 181 2011-02-08 14:49 JustAFile
+  --------------------------
+
+==========================================
+9) Creation test: Directory with children  (FAILURE)
+==========================================
+*** Archive size mismatch:
+      Submitted: 3072
+      Reference: 625152
+  --------------------------
+  Submitted's stdout:
+    Checksum is :         5chksum octal is: 0013763
+    after strcpy: 0013763
+    Checksum is :         chksum octal is: 0012740
+    after strcpy: 0012740
+    Checksum is :         chksum octal is: 0020544
+    after strcpy: 0020544
+    Checksum is :         chksum octal is: 0014473
+    after strcpy: 0014473
+  --------------------------
+  --------------------------
+  No listing for submitted's archive.
+  --------------------------
+
+==========================================
+10) Creation test: Directory with grandchildren  (FAILURE)
+==========================================
+*** Archive size mismatch:
+      Submitted: 3072
+      Reference: 1873920
+  --------------------------
+  Submitted's stdout:
+    Checksum is :         5chksum octal is: 0014177
+    after strcpy: 0014177
+    Checksum is :         chksum octal is: 0013124
+    after strcpy: 0013124
+    Checksum is :         chksum octal is: 0020042
+    after strcpy: 0020042
+    Checksum is :         chksum octal is: 0015525
+    after strcpy: 0015525
+  --------------------------
+  --------------------------
+  No listing for submitted's archive.
+  --------------------------
+
+==========================================
+11) Creation test: Deep Tree, all in name  (FAILURE)
+==========================================
+*** Archive size mismatch:
+      Submitted: 3584
+      Reference: 83968
+  --------------------------
+  Submitted's stdout:
+    Checksum is :         5chksum octal is: 0014003
+    after strcpy: 0014003
+    Checksum is :         chksum octal is: 0012540
+    after strcpy: 0012540
+    Checksum is :         chksum octal is: 0017415
+    after strcpy: 0017415
+    Checksum is :         chksum octal is: 0014543
+    after strcpy: 0014543
+    Checksum is :         chksum octal is: 0014201
+    after strcpy: 0014201
+  --------------------------
+  --------------------------
+  No listing for submitted's archive.
+  --------------------------
+
+==========================================
+12) Creation test: Deep Tree, moves into prefix  (FAILURE)
+==========================================
+*** Archive size mismatch:
+      Submitted: 3584
+      Reference: 84992
+  --------------------------
+  Submitted's stdout:
+    Checksum is :         5chksum octal is: 0013507
+    after strcpy: 0013507
+    Checksum is :         chksum octal is: 0012243
+    after strcpy: 0012243
+    Checksum is :         chksum octal is: 0016446
+    after strcpy: 0016446
+    Checksum is :         chksum octal is: 0014021
+    after strcpy: 0014021
+    Checksum is :         chksum octal is: 0013457
+    after strcpy: 0013457
+  --------------------------
+  --------------------------
+  No listing for submitted's archive.
+  --------------------------
+
+==========================================
+13) Listing test: single text file, non-verbose  (FAILURE)
+==========================================
+  --------------------------
+  Submitted's stdout:
+  --------------------------
+  --------------------------
+  Submitted's stderr:
+  --------------------------
+  --------------------------
+  Differences ( < Submitted's > Reference):
+    0a1
+    > JustAFile
+  --------------------------
+
+==========================================
+14) Listing test: single binary file, non-verbose  (FAILURE)
+==========================================
+  --------------------------
+  Submitted's stdout:
+  --------------------------
+  --------------------------
+  Submitted's stderr:
+  --------------------------
+  --------------------------
+  Differences ( < Submitted's > Reference):
+    0a1
+    > JustABinaryFile
+  --------------------------
+
+==========================================
+15) Listing test: single text file, verbose  (FAILURE)
+==========================================
+  --------------------------
+  Submitted's stdout:
+  --------------------------
+  --------------------------
+  Submitted's stderr:
+  --------------------------
+  --------------------------
+  Differences ( < Submitted's > Reference):
+    0a1
+    > -rw------- pnico/pnico            181 2010-12-09 18:46 JustAFile
+  --------------------------
+
