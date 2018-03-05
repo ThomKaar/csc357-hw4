@@ -88,7 +88,7 @@ void set_name(D_Node *dir_node, char *dir_name){
   char* new_name = (char*) safe_malloc(sizeof(char)
                                           * (safe_strlen(dir_name) + 1));
   strcpy(new_name, dir_name);
-  dir_node->name = new_name;
+  dir_node->pname = new_name;
 }
 
 void add_child(D_Node *dir_node, D_Node *d_node){
