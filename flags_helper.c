@@ -61,6 +61,18 @@ int flags_contain_t(char *argv[]){
    return 0; 
 }
 
+int flags_contain_v(char *argv[]){
+   int i, len;
+   len = strlen(argv[FLAGS_INDEX]);
+   for(i = 0; i< len; i++){
+      if(argv[FLAGS_INDEX][i] == 'v')
+      {
+         return 1;
+      }
+   }
+   return 0; 
+}
+
 
 
 int v_s_ornone(char *argv[]){
