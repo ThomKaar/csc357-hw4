@@ -10,14 +10,23 @@
 #include <string.h>
 #include <unistd.h>
 
-/*This file is to create all helper functions for the 
+void print_table(FILE* fp){
+
+}
+
+/* print file info
+  -rw------- pnico/pnico 200 2010-11-02 13:49 Testdir/file2*/
+void print_file_info(){
+
+}
+/*This file is to create all helper functions for the
  * table listing functionality for mytar. */
 
 /*This function goes one more directory deep
  * it assumes name is a directory and changes the current dirctory
  * into that given directory */
-void dir_down(struct dirent * direntp, char * path){
-   chdir(direntp->d_name);  
+/*void dir_down(struct dirent * direntp, char * path){
+   chdir(direntp->d_name);
    path = (char*) realloc(path, (strlen(path) + strlen(direntp->d_name)));
    strcat(path, direntp->d_name);
    printf("Current path is: %s", path);
@@ -47,7 +56,7 @@ void traverse_deep(char *path){
          free(file_path);
       }
    }
-}
+}*/
 
 
 
@@ -59,8 +68,3 @@ int main(int argc, char *argv[]){
    strcat(path, argv[1]);
    traverse_deep(path);
 }
-
-
-
-
-
