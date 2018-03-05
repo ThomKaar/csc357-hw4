@@ -77,10 +77,18 @@ int main(int argc, char* argv[]){
    else if(flags_contain_t(argv)){
       /*Put the table main here. */
       int fd;
-
+      char c;
       fd = open(argv[2], O_RDONLY);
 
-      print_table(fd, *argv[1]);
+      if(flags_contain_v(argv)){
+         c  = 'v';
+      }
+      else{
+         c = 's';
+      }
+      print_table(fd, c);
+
+      
 
       close(fd);
    }

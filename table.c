@@ -1,5 +1,6 @@
 /*Written for God by His grace. */
 
+#include "table.h"
 
 
 /*This file is to create all helper functions for the
@@ -50,7 +51,7 @@ void print_table(int fd, char option){
   while(read(fd, buffer, sizeof(buffer)) > 0){
     store_one(buffer, node);
     if(strlen(node->name) == 0) break;
-    if(option == 't'){
+    if(option == 'v'){
       print_file_info(node);
     } else{
       print_filename(node);

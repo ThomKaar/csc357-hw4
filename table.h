@@ -1,5 +1,9 @@
+#ifndef TABLE_H
+#define TABLE_H
 
+#ifndef _BSD_SOURCE
 #define _BSD_SOURCE
+#endif
 
 #include <dirent.h>
 #include <sys/stat.h>
@@ -15,3 +19,5 @@
 void print_table(int fd, char option);
 void print_file_info(D_Node *node);
 void print_filename(D_Node * node);
+
+#endif
