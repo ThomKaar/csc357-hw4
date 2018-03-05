@@ -5,8 +5,14 @@ LD = gcc
 LDFLAGS = -g 
 all : mytar
 
-mytar: main_tar.o archive_creation.o flags_helper.o
-	$(LD) $(LDFLAGS) -o mytar main_tar.o archive_creation.o flags_helper.o
+mytar: main_tar.o archive_creation.o flags_helper.o unpack_helper.o directory_struct.o
+	$(LD) $(LDFLAGS) -o mytar main_tar.o archive_creation.o flags_helper.o unpack_helper.o directory_struct.o
+
+unpack_helper.o : unpack_helper.c
+	$(LD) $(LDFLAGS) -c -o unpack_helper.o unpack_helper.c
+
+directory_struct.o : directory_struct.c
+	$(LD) $(LDFLAGS) -c -o directory_struct.o directory_struct.c
 
 archive_creation.o : archive_creation.c
 	$(LD) $(LDFLAGS) -c -o archive_creation.o archive_creation.c

@@ -2,7 +2,8 @@
 
 #include "flags_helper.h"
 #include "archive_creation.h"
-
+#include "unpack_helper.h"
+#include "directory_struct.h"
 
 /*argv[0] -> ./mytar
  * argv[1] -> flags
@@ -68,6 +69,9 @@ int main(int argc, char* argv[]){
          close(wfd);
          close(rfd);
          return 0;
+   }
+   else if(flags_contain_x(argv)){
+      store_all(argv[2]); 
    }
    return 0;
 
