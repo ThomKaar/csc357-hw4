@@ -73,6 +73,9 @@ int main(int argc, char* argv[]){
    else if(flags_contain_x(argv)){
       store_all(argv[2]); 
    }
+   else if(flags_contain_t(argv)){
+      /*Put the table main here. */
+   }
    return 0;
 
 }

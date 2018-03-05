@@ -11,5 +11,7 @@
 
 int flags_has_f(char *argv[]);
 int flags_incorrect_length(char *argv[]);
+int flags_has_x(char *argv[]);
+int flags_has_t(char *argv[]);
 
 #endif

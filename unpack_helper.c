@@ -123,13 +123,19 @@ void store_all(char *tarfile){
    while((bytes_read = read(rfd, header_buffer, sizeof(header_buffer)) > 0)){
       store_one(header_buffer, node);
       /*parse_name(node->name, file_name);*/
-      if((block_count =  node->sb->st_size / BLOCK_SIZE) > 0){
+      if((block_count =  node->sb->st_size / BLOCK_SIZE) > 0 
+            || node->sb->st_size > 0){
          /*header is for a file */
+         if(node->sb->st_size > 0 && node->sb->st_size < 500){
+            block_count = 1;
+         }
          wfd = open(node->name, O_WRONLY, 0666);
          while(block_count > 0){
             read(rfd, block_buffer, sizeof(block_buffer));
             write(wfd,block_buffer, sizeof(block_buffer));
+            block_count--;
          }
+
       }
       else{
          /*File is either a directory or a symlink*/
