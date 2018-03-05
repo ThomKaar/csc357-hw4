@@ -2,7 +2,9 @@
 #ifndef DIRECTORY_STRUCT_H
 #define DIRECTORY_STRUCT_H
 
+#ifndef _BSD_SOURCE
 #define _BSD_SOURCE
+#endif
 
 #include <dirent.h>
 #include <stddef.h>

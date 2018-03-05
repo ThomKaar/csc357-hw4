@@ -2,7 +2,7 @@
 #ifndef UNPACK_HELPER_H
 #define UNPACK_HELPER_H
 
-#define _BSD_SOURCE
+
 #define ASCII_NUM_OFFSET 48
 #define BLOCK_SIZE 512
 
@@ -10,6 +10,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
+#include <limits.h>
 #include "math.h"
 
 #include "directory_struct.h"
