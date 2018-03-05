@@ -6,10 +6,9 @@
 void store_name(char * buf, D_Node * node){
    char buffer0[256];
    char buffer1[100];
- 
+
    strncpy(buffer0,buf+345, 155);
    strncpy(buffer1, buf, 100);
-   strcat(buffer0, buffer1);
    strcat(buffer0, buffer1);
    strcpy(node->name,  buffer0);
    return;
@@ -20,9 +19,9 @@ void store_mode(char* buf, D_Node *node){
    char buffer[8];
    long mode;
    char *ptr;
-   
+
    strncpy(buffer, buf+100, 8);
-   mode = strtol(buffer, &ptr, 10);
+   mode = strtol(buffer, &ptr, 8);
    node->sb->st_mode = mode;
    return;
 }
@@ -33,7 +32,7 @@ void store_uid(char *buf, D_Node *node){
    char * ptr;
    long uid;
    strncpy(buffer, buf+108, 8);
-   uid = strtol(buffer,&ptr, 10);
+   uid = strtol(buffer,&ptr, 8);
    node->sb->st_uid = uid;
    return;
 }
@@ -45,7 +44,7 @@ void store_gid(char * buf, D_Node *node){
    long gid;
 
    strncpy(buffer, buf+116, 8);
-   gid = strtol(buffer,&ptr, 10);
+   gid = strtol(buffer,&ptr, 8);
    node->sb->st_gid = gid;
    return;
 }
@@ -56,7 +55,7 @@ void store_size(char * buf, D_Node *node){
    long size;
 
    strncpy(buffer, buf+124, 12);
-   size = strtol(buffer,&ptr, 10);
+   size = strtol(buffer,&ptr, 8);
    node->sb->st_size = size;
 }
 
@@ -65,22 +64,22 @@ void store_mtime(char * buf, D_Node * node){
    char *ptr;
    long mtime;
    strncpy(buffer, buf+136, 12);
-   mtime = strtol(buffer,&ptr, 10);
+   mtime = strtol(buffer,&ptr, 8);
    node->sb->st_mtime = mtime;
 }
 
 /*given a file descriptor at the chksum spot, move to typeflag and store it */
 void store_typeflag(char * buf, D_Node *node){
-   char buffer[1]; 
+   char buffer[1];
    strncpy(buffer, buf+156, 1);
-   node->filetype = *buffer;  
+   node->filetype = *buffer;
    return;
 }
 
 /*given a file descriptor at the linknamespot, move to uname and store it.*/
 void store_uname(char *buf, D_Node *node){
    char buffer[32];
-   
+
    strncpy(buffer, buf+265, 32);
    strcpy(node->uname, buffer);
 }
@@ -93,6 +92,10 @@ void store_gname(char * buf, D_Node *node){
 
 
 void store_one(char *buf, D_Node *node){
+   struct stat *sb;
+
+   sb = (struct stat*) malloc(sizeof(struct stat));
+   node->sb = sb;
    store_name(buf, node);
    store_mode(buf, node);
    store_uid(buf, node);
@@ -100,6 +103,8 @@ void store_one(char *buf, D_Node *node){
    store_size(buf, node);
    store_mtime(buf, node);
    store_typeflag(buf, node);
+   store_uname(buf, node);
+   store_gname(buf, node);
    return;
 }
 
@@ -134,6 +139,3 @@ void store_all(char *tarfile){
       }
    }
 }
-   
-
-

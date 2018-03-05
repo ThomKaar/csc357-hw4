@@ -25,6 +25,7 @@ void store_gid(char*, D_Node *node);
 void store_uid(char*, D_Node *node);
 void store_mode(char*, D_Node *node);
 void store_name(char*, D_Node *node);
+void store_one(char*, D_Node *node);
 double pow(double a, double b);
 
 #endif
