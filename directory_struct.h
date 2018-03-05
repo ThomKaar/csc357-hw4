@@ -2,6 +2,8 @@
 #ifndef DIRECTORY_STRUCT_H
 #define DIRECTORY_STRUCT_H
 
+#define _BSD_SOURCE
+
 #include <dirent.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -21,7 +23,7 @@ typedef struct {
   char uname[32];
   char gname[32];
   char name[256];
-  char * filetype;
+  char filetype;
 } D_Node;
 
 struct d_child {
