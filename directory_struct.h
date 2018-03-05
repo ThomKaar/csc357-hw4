@@ -14,10 +14,14 @@ typedef struct child_list Child_List;
 typedef struct d_child D_Child;
 
 typedef struct {
-  char* name;
+  char * pname;
   Child_List* entries;
   struct stat* sb;
   struct dirent* dir_ent;
+  char uname[32];
+  char gname[32];
+  char name[256];
+  char * filetype;
 } D_Node;
 
 struct d_child {
